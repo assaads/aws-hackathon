@@ -43,22 +43,38 @@ export function SocialMediaPostCreator() {
     }
   }
 
-  const convertToBase64 = (file: File): Promise<string> => {
+  function imageToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = (error) => reject(error)
-    })
+      const reader = new FileReader();
+  
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          // Remove the header "data:image/...;base64,"
+          const base64String = reader.result.replace(/^data:image\/\w+;base64,/, '');
+          resolve(base64String);
+        } else {
+          reject(new Error('Failed to convert image to base64'));
+        }
+      };
+  
+      reader.onerror = (error) => {
+        reject(error);
+      };
+  
+      reader.readAsDataURL(file);
+    });
   }
+  
 
   const analyzeImage = async (file: File) => {
     setIsAnalyzing(true)
     try {
-      const base64Image = await convertToBase64(file)
+      const base64Image = await imageToBase64(file)
+      console.log(base64Image)
       
       const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
         },

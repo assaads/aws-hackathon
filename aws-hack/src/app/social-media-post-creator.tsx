@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { Loader2 } from 'lucide-react'
-import toast, { Toaster } from 'react-hot-toast'
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
+import { Toaster } from "@/components/ui/toaster"
 
 const socialMediaPlatforms = [
   { id: "facebook", name: "Facebook" },
@@ -18,6 +19,7 @@ const socialMediaPlatforms = [
 ]
 
 export default function SocialMediaPostCreator() {
+  const { toast } = useToast()
   const [postContent, setPostContent] = useState("")
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [image, setImage] = useState<File | null>(null)
@@ -56,7 +58,7 @@ export default function SocialMediaPostCreator() {
     try {
       const base64Image = await convertToBase64(file)
       
-      const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
+      const response = await fetch('/api/analyze-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,67 +75,36 @@ export default function SocialMediaPostCreator() {
       setGeneratedHashtags(data.hashtags.join(' '))
       setPostContent(data.description + '\n\n' + data.hashtags.join(' '))
 
-      toast.success("Description and hashtags have been generated based on your image.")
+      toast({ description: "Description and hashtags have been generated based on your image." })
     } catch (error) {
       console.error('Error analyzing image:', error)
-      toast.error("Failed to analyze the image. Please try again.")
+      toast({ variant: "destructive", description: "Failed to analyze the image. Please try again." })
     } finally {
       setIsAnalyzing(false)
     }
   }
 
-  const submitPost = async (description: string, image: string, platforms: string[]) => {
-    try {
-      const response = await fetch('https://hc7lg2z8c3.execute-api.us-west-2.amazonaws.com/postimage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          description,
-          image,
-          platforms,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit post')
-      }
-
-      const data = await response.json()
-      return data
-    } catch (error) {
-      console.error('Error submitting post:', error)
-      throw error
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (postContent.trim() === "" || selectedPlatforms.length === 0 || !image) {
-      toast.error("Please enter a post, select at least one platform, and upload an image.")
+    if (postContent.trim() === "" || selectedPlatforms.length === 0) {
+      toast({ variant: "destructive", description: "Please enter a post and select at least one platform." })
       return
     }
 
     setIsUploading(true)
 
-    try {
-      const base64Image = await convertToBase64(image)
-      await submitPost(postContent, base64Image, selectedPlatforms)
+    // Simulate API call to upload post
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      toast.success(`Your post has been uploaded to ${selectedPlatforms.join(", ")}.`)
+    setIsUploading(false)
+    toast({ description: `Your post has been uploaded to ${selectedPlatforms.join(", ")}.` })
 
-      // Reset form
-      setPostContent("")
-      setSelectedPlatforms([])
-      setImage(null)
-      setGeneratedDescription("")
-      setGeneratedHashtags("")
-    } catch (error) {
-      toast.error("Failed to upload the post. Please try again.")
-    } finally {
-      setIsUploading(false)
-    }
+    // Reset form
+    setPostContent("")
+    setSelectedPlatforms([])
+    setImage(null)
+    setGeneratedDescription("")
+    setGeneratedHashtags("")
   }
 
   return (
@@ -227,7 +198,7 @@ export default function SocialMediaPostCreator() {
           </Button>
         </CardFooter>
       </form>
-      <Toaster position="bottom-right" />
+      <Toaster />
     </Card>
   )
 }

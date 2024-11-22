@@ -74,7 +74,6 @@ export function SocialMediaPostCreator() {
       
       const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
         method: 'POST',
-        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
         },

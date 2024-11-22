@@ -56,7 +56,7 @@ export default function SocialMediaPostCreator() {
     try {
       const base64Image = await convertToBase64(file)
       
-      const response = await fetch('/api/analyze-image', {
+      const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,27 +82,58 @@ export default function SocialMediaPostCreator() {
     }
   }
 
+  const submitPost = async (description: string, image: string, platforms: string[]) => {
+    try {
+      const response = await fetch('https://hc7lg2z8c3.execute-api.us-west-2.amazonaws.com/postimage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description,
+          image,
+          platforms,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit post')
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error submitting post:', error)
+      throw error
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (postContent.trim() === "" || selectedPlatforms.length === 0) {
-      toast.error("Please enter a post and select at least one platform.")
+    if (postContent.trim() === "" || selectedPlatforms.length === 0 || !image) {
+      toast.error("Please enter a post, select at least one platform, and upload an image.")
       return
     }
 
     setIsUploading(true)
 
-    // Simulate API call to upload post
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const base64Image = await convertToBase64(image)
+      await submitPost(postContent, base64Image, selectedPlatforms)
 
-    setIsUploading(false)
-    toast.success(`Your post has been uploaded to ${selectedPlatforms.join(", ")}.`)
+      toast.success(`Your post has been uploaded to ${selectedPlatforms.join(", ")}.`)
 
-    // Reset form
-    setPostContent("")
-    setSelectedPlatforms([])
-    setImage(null)
-    setGeneratedDescription("")
-    setGeneratedHashtags("")
+      // Reset form
+      setPostContent("")
+      setSelectedPlatforms([])
+      setImage(null)
+      setGeneratedDescription("")
+      setGeneratedHashtags("")
+    } catch (error) {
+      toast.error("Failed to upload the post. Please try again.")
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (

@@ -1,7 +1,7 @@
 
 
 import { Toaster } from "@/components/ui/toaster"
-import { SocialMediaPostCreator } from "./social-media-post-creator"
+import SocialMediaPostCreator from "./social-media-post-creator"
 
 export default function Page() {
   return (

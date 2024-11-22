@@ -2,14 +2,13 @@
 
 import { useState } from "react"
 import { Loader2 } from 'lucide-react'
-import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Toaster } from "@/components/ui/toaster"
+import { useToast } from "@/hooks/use-toast"
 
 const socialMediaPlatforms = [
   { id: "facebook", name: "Facebook" },
@@ -18,8 +17,7 @@ const socialMediaPlatforms = [
   { id: "linkedin", name: "LinkedIn" },
 ]
 
-export default function SocialMediaPostCreator() {
-  const { toast } = useToast()
+export function SocialMediaPostCreator() {
   const [postContent, setPostContent] = useState("")
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [image, setImage] = useState<File | null>(null)
@@ -27,6 +25,7 @@ export default function SocialMediaPostCreator() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [generatedDescription, setGeneratedDescription] = useState("")
   const [generatedHashtags, setGeneratedHashtags] = useState("")
+  const { toast } = useToast()
 
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms((prev) =>
@@ -58,12 +57,12 @@ export default function SocialMediaPostCreator() {
     try {
       const base64Image = await convertToBase64(file)
       
-      const response = await fetch('/api/analyze-image', {
+      const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ image: base64Image }),
+        body: JSON.stringify({ imageBase64: base64Image }),
       })
 
       if (!response.ok) {
@@ -71,40 +70,89 @@ export default function SocialMediaPostCreator() {
       }
 
       const data = await response.json()
-      setGeneratedDescription(data.description)
-      setGeneratedHashtags(data.hashtags.join(' '))
-      setPostContent(data.description + '\n\n' + data.hashtags.join(' '))
+      setGeneratedDescription(data)
+      setGeneratedHashtags(data)
+      setPostContent(data)
 
-      toast({ description: "Description and hashtags have been generated based on your image." })
+      toast({
+        title: "Image Analyzed",
+        description: "Description and hashtags have been generated based on your image.",
+      })
     } catch (error) {
       console.error('Error analyzing image:', error)
-      toast({ variant: "destructive", description: "Failed to analyze the image. Please try again." })
+      toast({
+        title: "Error",
+        description: "Failed to analyze the image. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsAnalyzing(false)
     }
   }
 
+  const submitPost = async (description: string, image: string, platforms: string[]) => {
+    try {
+      const response = await fetch('https://hc7lg2z8c3.execute-api.us-west-2.amazonaws.com/postimage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description,
+          image,
+          platforms,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit post')
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error submitting post:', error)
+      throw error
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (postContent.trim() === "" || selectedPlatforms.length === 0) {
-      toast({ variant: "destructive", description: "Please enter a post and select at least one platform." })
+    if (postContent.trim() === "" || selectedPlatforms.length === 0 || !image) {
+      toast({
+        title: "Error",
+        description: "Please enter a post, select at least one platform, and upload an image.",
+        variant: "destructive",
+      })
       return
     }
 
     setIsUploading(true)
 
-    // Simulate API call to upload post
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const base64Image = await convertToBase64(image)
+      await submitPost(postContent, base64Image, selectedPlatforms)
 
-    setIsUploading(false)
-    toast({ description: `Your post has been uploaded to ${selectedPlatforms.join(", ")}.` })
+      toast({
+        title: "Success",
+        description: `Your post has been uploaded to ${selectedPlatforms.join(", ")}.`,
+      })
 
-    // Reset form
-    setPostContent("")
-    setSelectedPlatforms([])
-    setImage(null)
-    setGeneratedDescription("")
-    setGeneratedHashtags("")
+      // Reset form
+      setPostContent("")
+      setSelectedPlatforms([])
+      setImage(null)
+      setGeneratedDescription("")
+      setGeneratedHashtags("")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to upload the post because of ${error} . Please try again`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -198,7 +246,6 @@ export default function SocialMediaPostCreator() {
           </Button>
         </CardFooter>
       </form>
-      <Toaster />
     </Card>
   )
 }

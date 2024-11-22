@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 
 const socialMediaPlatforms = [
   { id: "facebook", name: "Facebook" },
@@ -17,7 +17,13 @@ const socialMediaPlatforms = [
   { id: "linkedin", name: "LinkedIn" },
 ]
 
-export function SocialMediaPostCreator() {
+// Dummy data for image analysis
+const dummyImageAnalysis = {
+  description: "An extraordinary scene of a chimpanzee astronaut confidently pedaling a vintage bicycle through the cosmos. The monkey, wearing a sleek spacesuit, is surrounded by twinkling stars and colorful nebulae. The bicycle's wheels leave a trail of stardust as it cruises past distant planets and galaxies.",
+  hashtags: ["#SpaceMonkey", "#CosmicCyclist", "#AstroChimp", "#GalacticAdventure", "#OutOfThisWorldRide"]
+}
+
+export default function SocialMediaPostCreator() {
   const [postContent, setPostContent] = useState("")
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [image, setImage] = useState<File | null>(null)
@@ -43,51 +49,15 @@ export function SocialMediaPostCreator() {
     }
   }
 
-  function imageToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-  
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          // Remove the header "data:image/...;base64,"
-          const base64String = reader.result.replace(/^data:image\/\w+;base64,/, '');
-          resolve(base64String);
-        } else {
-          reject(new Error('Failed to convert image to base64'));
-        }
-      };
-  
-      reader.onerror = (error) => {
-        reject(error);
-      };
-  
-      reader.readAsDataURL(file);
-    });
-  }
-  
-
   const analyzeImage = async (file: File) => {
     setIsAnalyzing(true)
     try {
-      const base64Image = await imageToBase64(file)
-      console.log(base64Image)
-      
-      const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageBase64: base64Image }),
-      })
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500))
 
-      if (!response.ok) {
-        throw new Error('Image analysis failed')
-      }
-
-      const data = await response.json()
-      setGeneratedDescription(data)
-      setGeneratedHashtags(data)
-      setPostContent(data)
+      setGeneratedDescription(dummyImageAnalysis.description)
+      setGeneratedHashtags(dummyImageAnalysis.hashtags.join(' '))
+      setPostContent(dummyImageAnalysis.description + '\n\n' + dummyImageAnalysis.hashtags.join(' '))
 
       toast({
         title: "Image Analyzed",
@@ -105,30 +75,12 @@ export function SocialMediaPostCreator() {
     }
   }
 
-  const submitPost = async (description: string, image: string, platforms: string[]) => {
-    try {
-      const response = await fetch('https://hc7lg2z8c3.execute-api.us-west-2.amazonaws.com/postimage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          description,
-          image,
-          platforms,
-        }),
-      })
+  const submitPost = async (description: string, image: File, platforms: string[]) => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
-      if (!response.ok) {
-        throw new Error('Failed to submit post')
-      }
-
-      const data = await response.json()
-      return data
-    } catch (error) {
-      console.error('Error submitting post:', error)
-      throw error
-    }
+    // Simulate successful post
+    return { success: true, message: "Post submitted successfully" }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -145,8 +97,7 @@ export function SocialMediaPostCreator() {
     setIsUploading(true)
 
     try {
-      const base64Image = await imageToBase64(image)
-      await submitPost(postContent, base64Image, selectedPlatforms)
+      await submitPost(postContent, image, selectedPlatforms)
 
       toast({
         title: "Success",
@@ -162,7 +113,7 @@ export function SocialMediaPostCreator() {
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to upload the post because of ${error} . Please try again`,
+        description: "Failed to upload the post. Please try again.",
         variant: "destructive",
       })
     } finally {

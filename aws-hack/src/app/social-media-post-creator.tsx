@@ -74,6 +74,7 @@ export function SocialMediaPostCreator() {
       
       const response = await fetch('https://naaf6gbzt9.execute-api.us-west-2.amazonaws.com/Prod', {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -145,7 +146,7 @@ export function SocialMediaPostCreator() {
     setIsUploading(true)
 
     try {
-      const base64Image = await convertToBase64(image)
+      const base64Image = await imageToBase64(image)
       await submitPost(postContent, base64Image, selectedPlatforms)
 
       toast({
